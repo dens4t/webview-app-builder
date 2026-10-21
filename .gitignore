@@ -12,3 +12,6 @@ app/build
 *.apk
 *.aab
 out
+
+__pycache__/
+*.pyc
