@@ -38,6 +38,25 @@ def main() -> None:
     if not (ad_url.startswith("https://") or ad_url.startswith("http://")):
         ad_url = "https://builder.deni.ai.id"
 
+    # Optional Start.io (StartApp) App ID: numeric, from the dispatch payload.
+    # Written into gradle.properties, where the build reads STARTIO_APP_ID.
+    # Absent/empty leaves the committed default ("0" = Start.io ads disabled).
+    startio_app_id = os.environ.get("STARTIO_APP_ID", "").strip()
+    if startio_app_id:
+        if not startio_app_id.isdigit():
+            sys.exit("invalid STARTIO_APP_ID")
+        props_path = pathlib.Path("gradle.properties")
+        props_text = props_path.read_text(encoding="utf-8")
+        if re.search(r"(?m)^STARTIO_APP_ID=.*$", props_text):
+            props_text = re.sub(
+                r"(?m)^STARTIO_APP_ID=.*$",
+                f"STARTIO_APP_ID={startio_app_id}",
+                props_text,
+            )
+        else:
+            props_text = props_text.rstrip("\n") + f"\nSTARTIO_APP_ID={startio_app_id}\n"
+        props_path.write_text(props_text, encoding="utf-8")
+
     resources = pathlib.Path("app/src/main/res/values")
     resources.mkdir(parents=True, exist_ok=True)
     (resources / "config.xml").write_text(

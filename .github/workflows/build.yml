@@ -40,6 +40,7 @@ jobs:
           APP_ID: ${{ github.event.client_payload.job_id }}
           SHOW_ADS: ${{ github.event.client_payload.ads }}
           APP_AD_URL: ${{ github.event.client_payload.ad_url }}
+          STARTIO_APP_ID: ${{ github.event.client_payload.startio_app_id }}
         run: python3 scripts/configure.py
 
       - name: Generate app icon

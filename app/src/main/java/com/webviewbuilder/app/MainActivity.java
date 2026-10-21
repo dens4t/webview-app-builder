@@ -3,6 +3,8 @@ package com.webviewbuilder.app;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
@@ -18,6 +20,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.startapp.sdk.ads.banner.Banner;
 
 public class MainActivity extends Activity {
 
@@ -92,11 +96,58 @@ public class MainActivity extends Activity {
                 1f));
 
         if (getResources().getBoolean(R.bool.show_ads)) {
-            addAdBanner(root, density);
+            // Prefer a Start.io banner when an App ID is configured for this
+            // build; otherwise fall back to the built-in App Builder promo.
+            if (!addStartIoBanner(root, density)) {
+                addAdBanner(root, density);
+            }
         }
 
         setContentView(root);
         webView.loadUrl(getString(R.string.app_url));
+    }
+
+    /** Start.io App ID baked into the manifest meta-data ("" when unset). */
+    private String startIoAppId() {
+        try {
+            ApplicationInfo info = getPackageManager().getApplicationInfo(
+                    getPackageName(), PackageManager.GET_META_DATA);
+            Object value = info.metaData != null
+                    ? info.metaData.get("com.startapp.sdk.APPLICATION_ID") : null;
+            return value != null ? String.valueOf(value).trim() : "";
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    /**
+     * Adds a Start.io banner docked at the bottom, below the WebView.
+     * Returns false (and adds nothing) when no App ID is configured
+     * (STARTIO_APP_ID empty or "0"), so ad-free builds run exactly as before.
+     * Any SDK problem is swallowed: ads must never break the WebView.
+     */
+    private boolean addStartIoBanner(LinearLayout root, float density) {
+        String appId = startIoAppId();
+        if (appId.isEmpty() || appId.equals("0")) {
+            return false;
+        }
+        try {
+            View divider = new View(this);
+            divider.setBackgroundColor(Color.parseColor("#111111"));
+            root.addView(divider, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    Math.max(1, (int) (3 * density))));
+
+            Banner banner = new Banner(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL;
+            root.addView(banner, params);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private void addAdBanner(LinearLayout root, float density) {

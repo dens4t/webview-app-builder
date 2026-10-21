@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Start.io ads: advertising identifier access (targetSdk 31+). -->
+    <uses-permission android:name="android.permission.AD_ID" />
 
     <application
         android:allowBackup="true"
@@ -12,6 +14,20 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="true">
+
+        <!-- Start.io (StartApp) configuration. The App ID is injected via the
+             STARTIO_APP_ID manifest placeholder ("0" = Start.io ads disabled). -->
+        <meta-data
+            android:name="com.startapp.sdk.APPLICATION_ID"
+            android:value="${STARTIO_APP_ID}" />
+        <!-- Return ads are intrusive; keep them off. -->
+        <meta-data
+            android:name="com.startapp.sdk.RETURN_ADS_ENABLED"
+            android:value="false" />
+        <!-- Banner-only integration: no full-screen splash ad on launch. -->
+        <meta-data
+            android:name="com.startapp.sdk.SPLASH_ENABLED"
+            android:value="false" />
 
         <activity
             android:name=".MainActivity"
