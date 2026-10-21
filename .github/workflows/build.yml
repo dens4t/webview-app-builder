@@ -30,6 +30,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Install Pillow
+        run: python3 -m pip install --quiet --disable-pip-version-check pillow
+
       - name: Configure app
         env:
           APP_URL: ${{ github.event.client_payload.url }}
@@ -37,15 +40,24 @@ jobs:
           APP_ID: ${{ github.event.client_payload.job_id }}
         run: python3 scripts/configure.py
 
+      - name: Generate app icon
+        env:
+          APP_NAME: ${{ github.event.client_payload.name }}
+          ICON_URL: ${{ github.event.client_payload.icon_url }}
+        run: python3 scripts/icon.py
+
       - name: Build release APK
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
 
       - name: Prepare artifact
+        env:
+          SLUG: ${{ github.event.client_payload.slug }}
         run: |
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk "out/app-${{ github.event.client_payload.job_id }}.apk"
+          name="${SLUG:-app}"
+          cp app/build/outputs/apk/release/app-release.apk "out/${name}.apk"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
