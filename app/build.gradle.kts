@@ -47,7 +47,8 @@ dependencies {
     // Start.io in-app ads SDK (banner ads). Repositories (mavenCentral) are
     // declared centrally in settings.gradle.kts.
     // https://support.start.io - "Integration via Maven"
-    // Pinned to 5.3.1: 5.3.2+ require compileSdk 36/37, while this
-    // template compiles against 35 (AGP 8.7.3). 5.3.1 has no such floor.
-    implementation("com.startapp:inapp-sdk:5.3.1")
+    // Pinned to 5.2.0, the newest 5.x compatible with this template:
+    // 5.2.6+ require minSdk 23 and 5.3.2+ require compileSdk 36/37, while
+    // this template uses minSdk 21 / compileSdk 35 (AGP 8.7.3).
+    implementation("com.startapp:inapp-sdk:5.2.0")
 }
