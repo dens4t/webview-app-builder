@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -22,8 +23,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.startapp.sdk.ads.banner.Banner;
+import com.startapp.sdk.ads.banner.BannerListener;
+import com.startapp.sdk.adsbase.StartAppSDK;
 
 public class MainActivity extends Activity {
+
+    private static final String TAG = "StartIoBanner";
 
     private WebView webView;
 
@@ -95,16 +100,55 @@ public class MainActivity extends Activity {
                 0,
                 1f));
 
+        setContentView(root);
+
         if (getResources().getBoolean(R.bool.show_ads)) {
             // Prefer a Start.io banner when an App ID is configured for this
             // build; otherwise fall back to the built-in App Builder promo.
-            if (!addStartIoBanner(root, density)) {
+            String appId = startIoAppId();
+            if (appId.isEmpty() || appId.equals("0")) {
                 addAdBanner(root, density);
+            } else {
+                initStartIo(root, density, appId);
             }
         }
 
-        setContentView(root);
         webView.loadUrl(getString(R.string.app_url));
+    }
+
+    /**
+     * Initializes Start.io explicitly (the manifest auto-init provider is
+     * removed in AndroidManifest.xml) and only attaches the banner once the
+     * SDK reports it is ready. This avoids the blank banner that appears when
+     * an ad request races SDK initialization.
+     */
+    private void initStartIo(final LinearLayout root, final float density, String appId) {
+        try {
+            if (getResources().getBoolean(R.bool.startio_test_ads)) {
+                StartAppSDK.setTestAdsEnabled(true);
+                Log.i(TAG, "Start.io test ads enabled");
+            }
+            Log.i(TAG, "Start.io init appId=" + appId);
+            StartAppSDK.initParams(this, appId)
+                    .setReturnAdsEnabled(false)
+                    .setCallback(new Runnable() {
+                        @Override
+                        public void run() {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!addStartIoBanner(root, density)) {
+                                        addAdBanner(root, density);
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .init();
+        } catch (Throwable error) {
+            Log.e(TAG, "Start.io init failed", error);
+            addAdBanner(root, density);
+        }
     }
 
     /** Start.io App ID baked into the manifest meta-data ("" when unset). */
@@ -122,15 +166,11 @@ public class MainActivity extends Activity {
 
     /**
      * Adds a Start.io banner docked at the bottom, below the WebView.
-     * Returns false (and adds nothing) when no App ID is configured
-     * (STARTIO_APP_ID empty or "0"), so ad-free builds run exactly as before.
-     * Any SDK problem is swallowed: ads must never break the WebView.
+     * Returns false when the banner cannot be created, so the caller can fall
+     * back to the built-in App Builder promo. Any SDK problem is swallowed:
+     * ads must never break the WebView.
      */
     private boolean addStartIoBanner(LinearLayout root, float density) {
-        String appId = startIoAppId();
-        if (appId.isEmpty() || appId.equals("0")) {
-            return false;
-        }
         try {
             View divider = new View(this);
             divider.setBackgroundColor(Color.parseColor("#111111"));
@@ -138,14 +178,35 @@ public class MainActivity extends Activity {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     Math.max(1, (int) (3 * density))));
 
-            Banner banner = new Banner(this);
+            Banner banner = new Banner(this, new BannerListener() {
+                @Override
+                public void onReceiveAd(View view) {
+                    Log.i(TAG, "banner received");
+                }
+
+                @Override
+                public void onFailedToReceiveAd(View view) {
+                    Log.w(TAG, "banner failed to receive ad (no fill or network)");
+                }
+
+                @Override
+                public void onImpression(View view) {
+                    Log.i(TAG, "banner impression");
+                }
+
+                @Override
+                public void onClick(View view) {
+                    Log.i(TAG, "banner click");
+                }
+            });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER_HORIZONTAL;
             root.addView(banner, params);
             return true;
-        } catch (Throwable ignored) {
+        } catch (Throwable error) {
+            Log.e(TAG, "banner creation failed", error);
             return false;
         }
     }

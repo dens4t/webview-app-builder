@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -14,6 +15,14 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="true">
+
+        <!-- Start.io is initialized explicitly in MainActivity so the banner is
+             only attached after the SDK is ready. Remove the library's
+             auto-init provider to avoid double initialization. -->
+        <provider
+            android:name="com.startapp.sdk.adsbase.StartAppInitProvider"
+            android:authorities="${applicationId}.startappinitprovider"
+            tools:node="remove" />
 
         <!-- Start.io (StartApp) configuration. The App ID is injected via the
              STARTIO_APP_ID manifest placeholder ("0" = Start.io ads disabled). -->
