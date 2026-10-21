@@ -33,6 +33,10 @@ def main() -> None:
     if not suffix[0].isalpha():
         suffix = "a" + suffix
     application_id = "com.webviewbuilder.app." + suffix
+    show_ads = os.environ.get("SHOW_ADS", "1").strip() != "0"
+    ad_url = os.environ.get("APP_AD_URL", "").strip() or "https://builder.deni.ai.id"
+    if not (ad_url.startswith("https://") or ad_url.startswith("http://")):
+        ad_url = "https://builder.deni.ai.id"
 
     resources = pathlib.Path("app/src/main/res/values")
     resources.mkdir(parents=True, exist_ok=True)
@@ -41,6 +45,8 @@ def main() -> None:
         "<resources>\n"
         f"    <string name=\"app_name\">{html.escape(name)}</string>\n"
         f"    <string name=\"app_url\">{html.escape(url)}</string>\n"
+        f"    <string name=\"ad_url\">{html.escape(ad_url)}</string>\n"
+        f"    <bool name=\"show_ads\">{'true' if show_ads else 'false'}</bool>\n"
         "</resources>\n",
         encoding="utf-8",
     )
